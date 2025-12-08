@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar"; // Navbar component
+import HomePage from "./pages/HomePage"; // Import HomePage
+import AddListing from "./pages/AddListing"; // Add Listing Page
+import LoginPage from "./pages/LoginPage"; // Import LoginPage
+import SignupPage from "./pages/SignupPage"; // Import SignupPage
+import Footer from "./components/Footer"; // Footer component
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      <div className="bg-background-dark text-white">
+        {/* Conditionally render Navbar and Footer based on the current route */}
+        {window.location.pathname !== "/login" &&
+          window.location.pathname !== "/signup" && (
+            <>
+              <Navbar /> {/* Navbar for navigation */}
+            </>
+          )}
+
+        <Routes>
+          {/* Home Page Route */}
+          <Route path="/" element={<HomePage />} />
+          {/* Add Listing Route */}
+          <Route path="/add-listing" element={<AddListing />} />
+          {/* Login Route */}
+          <Route path="/login" element={<LoginPage />} />
+          {/* Signup Route */}
+          <Route path="/signup" element={<SignupPage />} />
+        </Routes>
+
+        {/* Conditionally render Footer only for non-login/signup routes */}
+        {window.location.pathname !== "/login" &&
+          window.location.pathname !== "/signup" && (
+            <>
+              <Footer /> {/* Footer for all pages */}
+            </>
+          )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
