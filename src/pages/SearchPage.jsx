@@ -7,9 +7,9 @@ const API_BASE_URL = "http://localhost:5000";
 const SearchPage = () => {
   const [listings, setListings] = useState([]);
   const [filters, setFilters] = useState({
-    price: { min: "", max: "" }, // Let users input min/max for price
-    year: { min: "", max: "" }, // Let users input min/max for year
-    mileage: { min: "", max: "" }, // Let users input min/max for mileage
+    price: { min: "", max: "" },
+    year: { min: "", max: "" },
+    mileage: { min: "", max: "" },
   });
   const [loading, setLoading] = useState(true);
 
@@ -198,11 +198,13 @@ const SearchPage = () => {
                       <img
                         className="w-full h-48 object-cover"
                         src={
-                          listing.images[0]?.image_url ||
-                          "https://via.placeholder.com/500"
+                          listing.images && listing.images.length > 0
+                            ? `http://localhost:5000${listing.images[0].image_url}` // Use the full URL
+                            : "https://via.placeholder.com/500" // Default placeholder if no image is available
                         }
                         alt={listing.title}
                       />
+
                       <div className="absolute top-2 right-2 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full">
                         {listing.make}
                       </div>
