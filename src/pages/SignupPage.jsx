@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const SignupPage = () => {
   const [fullName, setFullName] = useState("");
@@ -8,7 +8,12 @@ const SignupPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // For navigation after signup
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) navigate("/");
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,31 +30,38 @@ const SignupPage = () => {
         }
       );
       console.log("User signed up:", response.data);
-      // Redirect to login page after successful signup
       navigate("/login");
     } catch (err) {
-      setError("Sign up failed. Please try again.");
+      console.error("Signup error:", err.response?.data || err.message);
+      setError(
+        err.response?.data?.message ||
+          "Sign up failed. Please check your details and try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-lg space-y-8">
+    <div className="font-display min-h-screen w-screen bg-background-dark text-white flex items-center justify-center">
+      <div className="w-full max-w-lg px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white">Create your account</h1>
           <p className="mt-4 text-lg text-[#90b2cb]">
             Already have an account?{" "}
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="font-semibold text-primary hover:text-primary/80"
             >
               Sign in
-            </a>
+            </Link>
           </p>
         </div>
-        <div className="bg-card-dark p-8 shadow-2xl shadow-black/25 rounded-xl border border-border-dark space-y-6">
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-card-dark p-8 shadow-2xl shadow-black/25 rounded-xl border border-border-dark space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <label
@@ -69,6 +81,7 @@ const SignupPage = () => {
                 required
               />
             </div>
+
             <div>
               <label
                 className="block text-sm font-medium text-[#90b2cb]"
@@ -87,6 +100,7 @@ const SignupPage = () => {
                 required
               />
             </div>
+
             <div>
               <label
                 className="block text-sm font-medium text-[#90b2cb]"
@@ -105,17 +119,26 @@ const SignupPage = () => {
                 required
               />
             </div>
+
             {error && <p className="text-red-500 text-sm">{error}</p>}
           </div>
+
           <button
             type="submit"
-            onClick={handleSubmit}
-            className="w-full justify-center rounded-lg bg-primary py-3 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary/90"
+            className="w-full justify-center rounded-lg bg-primary py-3 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 disabled:opacity-60"
             disabled={loading}
           >
             {loading ? "Creating Account..." : "Create Account"}
           </button>
-        </div>
+          <div className="text-center mt-4">
+            <Link
+              to="/"
+              className="text-sm font-medium text-primary hover:text-primary/80 underline"
+            >
+              ← Back to Home
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );
