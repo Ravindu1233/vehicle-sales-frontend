@@ -1,14 +1,10 @@
-// src/components/TrendingCars.jsx
 import React from "react";
 
 const TrendingCars = () => {
   return (
-    <div className="py-16 bg-background-light dark:bg-background-dark">
-      <h2 className="text-3xl font-bold text-center text-white">
-        Top Trending Cars
-      </h2>
+    <div className="py-16 bg-black text-white">
+      <h2 className="text-3xl font-bold text-center">Top Trending Cars</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-        {/* Example Trending Cars */}
         <div className="bg-card-dark p-6 rounded-lg text-white">
           <img
             src="https://link-to-car-image"

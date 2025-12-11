@@ -19,7 +19,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; /* Default font family */
+  font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Inter font */
 }
 
 /* Links */
@@ -80,4 +80,14 @@ button:focus-visible {
   button {
     background-color: #333333; /* Dark mode button background */
   }
+}
+
+/* Custom Tailwind Dark Mode for Buttons and Backgrounds */
+html.dark {
+  background-color: #101a22;
+  color: #ffffff;
+}
+
+html.dark button {
+  background-color: #333333;
 }

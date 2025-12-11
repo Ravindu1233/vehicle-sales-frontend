@@ -6,15 +6,12 @@ const Footer = () => {
     <footer className="bg-card-dark text-white py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company Info */}
           <div>
             <h3 className="text-lg font-semibold">VehicleHub</h3>
             <p className="text-sm text-text-muted-dark mt-2">
               The best place to find your next vehicle with trust and security.
             </p>
           </div>
-
-          {/* Company Links */}
           <div>
             <h4 className="font-semibold mb-2">Company</h4>
             <ul className="space-y-2">
@@ -44,8 +41,6 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-
-          {/* Resources Links */}
           <div>
             <h4 className="font-semibold mb-2">Resources</h4>
             <ul className="space-y-2">
@@ -75,8 +70,6 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-
-          {/* Legal Links */}
           <div>
             <h4 className="font-semibold mb-2">Legal</h4>
             <ul className="space-y-2">
@@ -107,8 +100,6 @@ const Footer = () => {
             </ul>
           </div>
         </div>
-
-        {/* Footer Bottom */}
         <div className="mt-12 text-center text-sm text-text-muted-dark">
           <p>© 2024 VehicleHub. All Rights Reserved.</p>
         </div>

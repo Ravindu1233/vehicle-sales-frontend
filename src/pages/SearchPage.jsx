@@ -7,9 +7,9 @@ const API_BASE_URL = "http://localhost:5000";
 const SearchPage = () => {
   const [listings, setListings] = useState([]);
   const [filters, setFilters] = useState({
-    price: { min: 0, max: 100000 },
-    year: { min: 2000, max: 2023 },
-    mileage: { min: 0, max: 200000 },
+    price: { min: "", max: "" }, // Let users input min/max for price
+    year: { min: "", max: "" }, // Let users input min/max for year
+    mileage: { min: "", max: "" }, // Let users input min/max for mileage
   });
   const [loading, setLoading] = useState(true);
 
@@ -38,28 +38,49 @@ const SearchPage = () => {
     });
   };
 
+  const applyFilters = () => {
+    setLoading(true);
+    // Optionally, apply filters by calling the backend with updated filters
+    // axios.get(`${API_BASE_URL}/api/listings`, { params: filters })
+    //   .then(response => {
+    //     setListings(response.data);
+    //     setLoading(false);
+    //   })
+    //   .catch(error => {
+    //     console.error('Error applying filters', error);
+    //     setLoading(false);
+    //   });
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      price: { min: "", max: "" },
+      year: { min: "", max: "" },
+      mileage: { min: "", max: "" },
+    });
+  };
+
   const filteredListings = listings.filter((listing) => {
-    return (
-      listing.price >= filters.price.min &&
-      listing.price <= filters.price.max &&
-      listing.year >= filters.year.min &&
-      listing.year <= filters.year.max &&
-      listing.mileage >= filters.mileage.min &&
-      listing.mileage <= filters.mileage.max
-    );
+    const isPriceValid =
+      (filters.price.min === "" || listing.price >= filters.price.min) &&
+      (filters.price.max === "" || listing.price <= filters.price.max);
+    const isYearValid =
+      (filters.year.min === "" || listing.year >= filters.year.min) &&
+      (filters.year.max === "" || listing.year <= filters.year.max);
+    const isMileageValid =
+      (filters.mileage.min === "" || listing.mileage >= filters.mileage.min) &&
+      (filters.mileage.max === "" || listing.mileage <= filters.mileage.max);
+
+    return isPriceValid && isYearValid && isMileageValid;
   });
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3 bg-background-dark/80">
-        <h2 className="text-white text-lg font-bold">
-          Vehicle Sales Aggregator
-        </h2>
-      </header>
+    <div className="min-h-screen bg-black text-white">
       <main className="flex-grow w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
+          {/* Filters Section */}
           <aside className="w-full lg:w-1/4 xl:w-1/5 flex-shrink-0">
-            <div className="sticky top-28 flex flex-col gap-4 bg-white/5 rounded-xl p-6">
+            <div className="sticky top-28 flex flex-col gap-4 bg-black/50 rounded-xl p-6 shadow-lg">
               <h1 className="text-white text-base font-medium">
                 Advanced Filters
               </h1>
@@ -75,7 +96,7 @@ const SearchPage = () => {
                     name="price"
                     value={filters.price.min}
                     onChange={handleFilterChange}
-                    className="w-full bg-background-dark text-white rounded p-2"
+                    className="w-full bg-black text-white rounded p-2"
                     placeholder="Min Price"
                   />
                   <input
@@ -84,7 +105,7 @@ const SearchPage = () => {
                     name="price"
                     value={filters.price.max}
                     onChange={handleFilterChange}
-                    className="w-full bg-background-dark text-white rounded p-2 mt-2"
+                    className="w-full bg-black text-white rounded p-2 mt-2"
                     placeholder="Max Price"
                   />
                 </div>
@@ -98,7 +119,7 @@ const SearchPage = () => {
                     name="year"
                     value={filters.year.min}
                     onChange={handleFilterChange}
-                    className="w-full bg-background-dark text-white rounded p-2"
+                    className="w-full bg-black text-white rounded p-2"
                     placeholder="Min Year"
                   />
                   <input
@@ -107,7 +128,7 @@ const SearchPage = () => {
                     name="year"
                     value={filters.year.max}
                     onChange={handleFilterChange}
-                    className="w-full bg-background-dark text-white rounded p-2 mt-2"
+                    className="w-full bg-black text-white rounded p-2 mt-2"
                     placeholder="Max Year"
                   />
                 </div>
@@ -123,7 +144,7 @@ const SearchPage = () => {
                     name="mileage"
                     value={filters.mileage.min}
                     onChange={handleFilterChange}
-                    className="w-full bg-background-dark text-white rounded p-2"
+                    className="w-full bg-black text-white rounded p-2"
                     placeholder="Min Mileage"
                   />
                   <input
@@ -132,10 +153,24 @@ const SearchPage = () => {
                     name="mileage"
                     value={filters.mileage.max}
                     onChange={handleFilterChange}
-                    className="w-full bg-background-dark text-white rounded p-2 mt-2"
+                    className="w-full bg-black text-white rounded p-2 mt-2"
                     placeholder="Max Mileage"
                   />
                 </div>
+              </div>
+              <div className="flex gap-4 mt-4">
+                <button
+                  onClick={applyFilters}
+                  className="bg-primary text-white font-bold py-2 px-4 rounded-lg"
+                >
+                  Apply Filters
+                </button>
+                <button
+                  onClick={resetFilters}
+                  className="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg"
+                >
+                  Reset Filters
+                </button>
               </div>
             </div>
           </aside>
@@ -152,12 +187,12 @@ const SearchPage = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {loading ? (
-                <div>Loading...</div>
+                <div className="text-white">Loading...</div>
               ) : (
                 filteredListings.map((listing) => (
                   <div
                     key={listing._id}
-                    className="flex flex-col bg-white/5 rounded-xl overflow-hidden shadow-lg hover:ring-2 hover:ring-primary/50 transition-all duration-300"
+                    className="flex flex-col bg-black/40 rounded-xl overflow-hidden shadow-lg hover:ring-2 hover:ring-primary/50 transition-all duration-300"
                   >
                     <div className="relative">
                       <img
