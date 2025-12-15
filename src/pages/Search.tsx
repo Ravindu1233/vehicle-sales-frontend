@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  Search,
-  SlidersHorizontal,
-  Grid3X3,
-  List,
-  X,
-} from "lucide-react";
+import { Search, SlidersHorizontal, Grid3X3, List, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,11 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
-import {
-  carMakes,
-  fuelTypes,
-  transmissions,
-} from "@/data/mockVehicles";
+import { carMakes, fuelTypes, transmissions } from "@/data/mockVehicles";
 import {
   Select,
   SelectContent,
@@ -37,13 +27,20 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import api from "@/lib/api"; // ✅ ADD
 
-
 const PRICE_MAX = 100000000; // ✅ 100 million LKR
 
 const SearchPage = () => {
-  const [searchParams] = useSearchParams();
+  // ✅ IMPORTANT: use setSearchParams too
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [priceRange, setPriceRange] = useState([0, 200000]);
+
+  // ✅ IMPORTANT: default should match PRICE_MAX so it doesn't look "filtered" by default
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    0,
+    PRICE_MAX,
+  ]);
+
   const [selectedMakes, setSelectedMakes] = useState<string[]>([]);
   const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -55,6 +52,45 @@ const SearchPage = () => {
 
   const query = searchParams.get("q") || "";
   const make = searchParams.get("make") || "";
+
+  // ✅ 1) Read filters from URL on first mount (refresh/back keeps filters)
+  useEffect(() => {
+    const makesFromUrl =
+      searchParams.get("makes")?.split(",").filter(Boolean) || [];
+    const fuelsFromUrl =
+      searchParams.get("fuels")?.split(",").filter(Boolean) || [];
+
+    const minPrice = Number(searchParams.get("minPrice") ?? 0);
+    const maxPrice = Number(searchParams.get("maxPrice") ?? PRICE_MAX);
+
+    setSelectedMakes(makesFromUrl);
+    setSelectedFuelTypes(fuelsFromUrl);
+
+    // guard invalid numbers
+    const safeMin = Number.isFinite(minPrice) ? minPrice : 0;
+    const safeMax = Number.isFinite(maxPrice) ? maxPrice : PRICE_MAX;
+
+    setPriceRange([safeMin, safeMax]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only once
+
+  // ✅ 2) Sync current filters -> URL (so refresh/back persists them)
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+
+    if (selectedMakes.length) params.set("makes", selectedMakes.join(","));
+    else params.delete("makes");
+
+    if (selectedFuelTypes.length)
+      params.set("fuels", selectedFuelTypes.join(","));
+    else params.delete("fuels");
+
+    params.set("minPrice", String(priceRange[0] ?? 0));
+    params.set("maxPrice", String(priceRange[1] ?? PRICE_MAX));
+
+    setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMakes, selectedFuelTypes, priceRange]);
 
   const toggleMake = (makeName: string) => {
     setSelectedMakes((prev) =>
@@ -200,14 +236,18 @@ const SearchPage = () => {
       <div className="filter-section">
         <h3 className="font-semibold text-foreground mb-4">Price Range</h3>
         <div className="space-y-4">
-          <Slider
-            value={priceRange}
-            onValueChange={setPriceRange}
-            min={0}
-            max={PRICE_MAX} // ✅ changed max
-            step={50000} // ✅ better step for LKR (still same UI)
-            className="w-full"
-          />
+       <Slider
+  value={priceRange}
+  onValueChange={(val) => {
+    const next: [number, number] = [val[0] ?? 0, val[1] ?? PRICE_MAX];
+    setPriceRange(next);
+  }}
+  min={0}
+  max={PRICE_MAX}
+  step={50000}
+  className="w-full"
+/>
+
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
               LKR {priceRange[0].toLocaleString()}
@@ -376,10 +416,14 @@ const SearchPage = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h1 className="text-2xl font-bold text-foreground">
-                    {query || make ? `Results for "${query || make}"` : "All Vehicles"}
+                    {query || make
+                      ? `Results for "${query || make}"`
+                      : "All Vehicles"}
                   </h1>
                   <p className="text-muted-foreground">
-                    {loading ? "Loading..." : `${filteredVehicles.length} vehicles found`}
+                    {loading
+                      ? "Loading..."
+                      : `${filteredVehicles.length} vehicles found`}
                   </p>
                 </div>
 
@@ -390,8 +434,12 @@ const SearchPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="latest">Latest</SelectItem>
-                      <SelectItem value="price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                      <SelectItem value="price-low">
+                        Price: Low to High
+                      </SelectItem>
+                      <SelectItem value="price-high">
+                        Price: High to Low
+                      </SelectItem>
                       <SelectItem value="mileage">Lowest Mileage</SelectItem>
                       <SelectItem value="year">Newest Year</SelectItem>
                     </SelectContent>
