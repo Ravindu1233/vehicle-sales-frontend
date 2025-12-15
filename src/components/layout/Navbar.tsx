@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Search, Heart, Bell, User, Car, LayoutGrid } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, Search, Heart, Bell, Car, LayoutGrid, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,30 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+
+  // keep navbar updated when token changes (login/logout, multi-tab)
+  useEffect(() => {
+    const syncAuth = () => setIsLoggedIn(!!localStorage.getItem("token"));
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("focus", syncAuth);
+    window.addEventListener("auth-change", syncAuth);
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("focus", syncAuth);
+      window.removeEventListener("auth-change", syncAuth);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user"); // if you store user too
+    setIsLoggedIn(false);
+    setIsOpen(false);
+    navigate("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -62,12 +86,30 @@ export function Navbar() {
               </Link>
             </Button>
             <div className="w-px h-6 bg-border mx-2" />
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button variant="accent" size="sm" asChild>
-              <Link to="/signup">Get Started</Link>
-            </Button>
+
+            {!isLoggedIn ? (
+              <>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/login">Sign In</Link>
+                </Button>
+                <Button variant="accent" size="sm" asChild>
+                  <Link to="/signup">Get Started</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/dashboard" className="gap-2">
+                    <LayoutGrid className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                </Button>
+                <Button variant="accent" size="sm" onClick={handleLogout} className="gap-2">
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -99,13 +141,39 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+
             <div className="pt-4 flex gap-2">
-              <Button variant="outline" className="flex-1" asChild>
-                <Link to="/login" onClick={() => setIsOpen(false)}>Sign In</Link>
-              </Button>
-              <Button variant="accent" className="flex-1" asChild>
-                <Link to="/signup" onClick={() => setIsOpen(false)}>Get Started</Link>
-              </Button>
+              {!isLoggedIn ? (
+                <>
+                  <Button variant="outline" className="flex-1" asChild>
+                    <Link to="/login" onClick={() => setIsOpen(false)}>
+                      Sign In
+                    </Link>
+                  </Button>
+                  <Button variant="accent" className="flex-1" asChild>
+                    <Link to="/signup" onClick={() => setIsOpen(false)}>
+                      Get Started
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="flex-1" asChild>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)} className="gap-2">
+                      <LayoutGrid className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="accent"
+                    className="flex-1 gap-2"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
