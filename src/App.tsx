@@ -13,6 +13,7 @@ import AddListing from "./pages/AddListing";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import SavedListings from "./pages/dashboard/SavedListings";
+import MyListings from "./pages/dashboard/MyListings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardOverview />} />
+            <Route path="listings" element={<MyListings />} />
             <Route path="saved" element={<SavedListings />} />
             <Route path="alerts" element={<DashboardOverview />} />
             <Route path="history" element={<DashboardOverview />} />

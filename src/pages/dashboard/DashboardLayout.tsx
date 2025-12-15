@@ -9,6 +9,7 @@ import {
   User,
   Menu,
   X,
+  Car,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   { href: "/dashboard", label: "Overview", icon: Sparkles },
+  { href: "/dashboard/listings", label: "My Listings", icon: Car, count: 4 },
   { href: "/dashboard/saved", label: "Saved Listings", icon: Heart, count: 12 },
   { href: "/dashboard/alerts", label: "Alerts", icon: Bell, count: 3 },
   { href: "/dashboard/history", label: "Recently Viewed", icon: Clock },
@@ -43,25 +45,35 @@ const DashboardLayout = () => {
               className="lg:hidden fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full shadow-lg"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {sidebarOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </Button>
 
             {/* Sidebar */}
             <aside
               className={cn(
                 "fixed lg:static inset-y-0 left-0 z-40 w-64 bg-card border-r border-border lg:border lg:rounded-xl transform transition-transform lg:transform-none",
-                sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+                sidebarOpen
+                  ? "translate-x-0"
+                  : "-translate-x-full lg:translate-x-0"
               )}
             >
               <div className="h-full lg:h-auto p-4 pt-20 lg:pt-4 overflow-y-auto">
                 {/* User Info */}
                 <div className="flex items-center gap-3 p-4 mb-4">
                   <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center">
-                    <span className="text-lg font-bold text-accent-foreground">JD</span>
+                    <span className="text-lg font-bold text-accent-foreground">
+                      JD
+                    </span>
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">John Doe</p>
-                    <p className="text-sm text-muted-foreground">john@example.com</p>
+                    <p className="text-sm text-muted-foreground">
+                      john@example.com
+                    </p>
                   </div>
                 </div>
 
