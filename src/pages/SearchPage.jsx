@@ -6,6 +6,7 @@ const API_BASE_URL = "http://localhost:5000";
 
 const SearchPage = () => {
   const [listings, setListings] = useState([]);
+  const [favoriteListings, setFavoriteListings] = useState(new Set()); // Keep track of favorite listings
   const [filters, setFilters] = useState({
     price: { min: "", max: "" },
     year: { min: "", max: "" },
@@ -27,6 +28,18 @@ const SearchPage = () => {
 
     fetchListings();
   }, []);
+
+  const handleFavoriteClick = (listingId) => {
+    setFavoriteListings((prevFavorites) => {
+      const newFavorites = new Set(prevFavorites);
+      if (newFavorites.has(listingId)) {
+        newFavorites.delete(listingId); // Remove from favorites if it's already added
+      } else {
+        newFavorites.add(listingId); // Add to favorites
+      }
+      return newFavorites;
+    });
+  };
 
   const handleFilterChange = (e) => {
     setFilters({
@@ -204,9 +217,20 @@ const SearchPage = () => {
                         }
                         alt={listing.title}
                       />
-
                       <div className="absolute top-2 right-2 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full">
                         {listing.make}
+                      </div>
+                      <div
+                        className="absolute top-2 left-2 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full cursor-pointer"
+                        onClick={() => handleFavoriteClick(listing._id)}
+                      >
+                        <i
+                          className={`fas fa-heart ${
+                            favoriteListings.has(listing._id)
+                              ? "text-red-500"
+                              : "text-white"
+                          }`}
+                        ></i>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow">
@@ -223,10 +247,10 @@ const SearchPage = () => {
                         <span>•</span>
                         <span>{listing.transmission}</span>
                       </div>
-                      <div className="mt-auto pt-4">
+                      <div className="mt-auto pt-4 flex justify-center">
                         <Link
-                          to={`/listing/${listing._id}`}
-                          className="w-full text-center bg-primary/20 text-primary font-bold py-2 px-4 rounded-lg hover:bg-primary/30 transition-colors text-sm"
+                          to={`/view-listing/${listing._id}`}
+                          className="w-full text-center bg-primary/20 text-primary font-bold py-2 px-4 rounded-lg hover:bg-primary/30 transition-colors text-sm max-w-xs mx-auto"
                         >
                           View Details
                         </Link>

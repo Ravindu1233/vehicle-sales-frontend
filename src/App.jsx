@@ -13,6 +13,7 @@ import SignupPage from "./pages/SignupPage";
 import Footer from "./components/Footer";
 import NotFoundPage from "./pages/NotFoundPage";
 import SearchPage from "./pages/SearchPage";
+import ViewListingPage from "./pages/ViewListingPage";
 
 const AppLayout = () => {
   const location = useLocation();
@@ -34,6 +35,10 @@ const AppLayout = () => {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="*" element={<NotFoundPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route
+            path="/view-listing/:listingId"
+            element={<ViewListingPage />}
+          />
         </Routes>
       </main>
 
