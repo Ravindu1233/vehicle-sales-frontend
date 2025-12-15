@@ -5,32 +5,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import api from "@/lib/api"; // ✅ ADD
+import api from "@/lib/api";
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ ADD
-  const [error, setError] = useState(""); // ✅ ADD (simple error display)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => { // ✅ CHANGE (remove React.FormEvent if not TS)
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      // ✅ CALL YOUR BACKEND
       const res = await api.post("/api/auth/login", { email, password });
-
       const { token, user } = res.data;
 
-      // ✅ SAVE TOKEN + USER
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      // ✅ GO DASHBOARD
+      // ✅ ADD THIS (so Navbar updates instantly)
+      window.dispatchEvent(new Event("auth-change"));
+
       navigate("/dashboard");
     } catch (err) {
       const msg =
@@ -45,10 +44,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left - Form */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="w-full max-w-md space-y-8">
-          {/* Logo */}
           <div className="text-center">
             <Link to="/" className="inline-flex items-center gap-2 mb-8">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-blue-600 flex items-center justify-center">
@@ -62,14 +59,12 @@ const Login = () => {
             </p>
           </div>
 
-          {/* ✅ ERROR MESSAGE */}
           {error ? (
             <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           ) : null}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -90,10 +85,7 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-accent hover:underline"
-                >
+                <Link to="/forgot-password" className="text-sm text-accent hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -114,11 +106,7 @@ const Login = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -130,13 +118,11 @@ const Login = () => {
               </Label>
             </div>
 
-            {/* ✅ BUTTON LOADING */}
             <Button variant="hero" size="lg" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
-          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border" />
@@ -148,17 +134,11 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Social Login */}
           <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" size="lg" type="button">
-              Google
-            </Button>
-            <Button variant="outline" size="lg" type="button">
-              Facebook
-            </Button>
+            <Button variant="outline" size="lg" type="button">Google</Button>
+            <Button variant="outline" size="lg" type="button">Facebook</Button>
           </div>
 
-          {/* Sign Up Link */}
           <p className="text-center text-muted-foreground">
             Don't have an account?{" "}
             <Link to="/signup" className="text-accent font-semibold hover:underline">
@@ -168,7 +148,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right - Image */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-slate-800 to-primary">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&auto=format&fit=crop&q=80')] bg-cover bg-center opacity-30" />
