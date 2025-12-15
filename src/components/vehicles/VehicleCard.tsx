@@ -27,11 +27,17 @@ interface VehicleCardProps {
   className?: string;
 }
 
-export function VehicleCard({ vehicle, onSave, isSaved = false, className }: VehicleCardProps) {
+export function VehicleCard({
+  vehicle,
+  onSave,
+  isSaved = false,
+  className,
+}: VehicleCardProps) {
+  // ✅ LKR price formatting
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-LK", {
       style: "currency",
-      currency: "USD",
+      currency: "LKR",
       maximumFractionDigits: 0,
     }).format(price);
   };
@@ -49,18 +55,12 @@ export function VehicleCard({ vehicle, onSave, isSaved = false, className }: Veh
           alt={vehicle.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
-        
+
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-          {vehicle.isVerified && (
-            <Badge variant="verified">Verified</Badge>
-          )}
-          {vehicle.isFeatured && (
-            <Badge variant="featured">Featured</Badge>
-          )}
-          {vehicle.isNew && (
-            <Badge variant="new">New</Badge>
-          )}
+          {vehicle.isVerified && <Badge variant="verified">Verified</Badge>}
+          {vehicle.isFeatured && <Badge variant="featured">Featured</Badge>}
+          {vehicle.isNew && <Badge variant="new">New</Badge>}
         </div>
 
         {/* Source Badge */}
@@ -68,20 +68,27 @@ export function VehicleCard({ vehicle, onSave, isSaved = false, className }: Veh
           {vehicle.source}
         </Badge>
 
-        {/* Save Button */}
+        {/* ❤️ Favorite Button */}
         <button
           onClick={(e) => {
-            e.preventDefault();
+            e.preventDefault(); // stop card navigation
+            e.stopPropagation();
             onSave?.(vehicle.id);
           }}
+          aria-label="Save to favorites"
           className={cn(
-            "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all",
+            "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow",
             isSaved
-              ? "bg-destructive text-destructive-foreground"
-              : "bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-background"
+              ? "bg-red-500 text-white"
+              : "bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-red-500 hover:bg-background"
           )}
         >
-          <Heart className={cn("w-5 h-5", isSaved && "fill-current")} />
+          <Heart
+            className={cn(
+              "w-5 h-5 transition-colors",
+              isSaved && "fill-current"
+            )}
+          />
         </button>
       </div>
 
@@ -99,19 +106,19 @@ export function VehicleCard({ vehicle, onSave, isSaved = false, className }: Veh
 
         {/* Specs */}
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="spec-item">
+          <div className="spec-item flex items-center gap-1">
             <Calendar className="w-4 h-4" />
             <span>{vehicle.year}</span>
           </div>
-          <div className="spec-item">
+          <div className="spec-item flex items-center gap-1">
             <Gauge className="w-4 h-4" />
-            <span>{formatMileage(vehicle.mileage)} mi</span>
+            <span>{formatMileage(vehicle.mileage)} km</span>
           </div>
-          <div className="spec-item">
+          <div className="spec-item flex items-center gap-1">
             <Fuel className="w-4 h-4" />
             <span>{vehicle.fuelType}</span>
           </div>
-          <div className="spec-item">
+          <div className="spec-item flex items-center gap-1">
             <MapPin className="w-4 h-4" />
             <span className="truncate">{vehicle.location}</span>
           </div>

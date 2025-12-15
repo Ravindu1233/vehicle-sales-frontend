@@ -45,6 +45,8 @@ const SearchPage = () => {
   const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
   // ✅ backend data
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -143,6 +145,55 @@ const SearchPage = () => {
 
     fetchListings();
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return; // not logged in → no favorites
+
+    const fetchFavorites = async () => {
+      try {
+        const res = await api.get("/api/favorites/mine");
+        const ids = new Set<string>(
+          res.data
+            .map((f: any) => f.listing_id?._id)
+            .filter((id: any): id is string => typeof id === "string")
+        );
+
+        setFavoriteIds(ids);
+      } catch (err) {
+        console.error("Failed to load favorites");
+      }
+    };
+
+    fetchFavorites();
+  }, []);
+
+  const toggleFavorite = async (listingId: string) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login to save favorites");
+      return;
+    }
+
+    const isFav = favoriteIds.has(listingId);
+
+    try {
+      if (isFav) {
+        await api.delete(`/api/favorites/${listingId}`);
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(listingId);
+          return next;
+        });
+      } else {
+        await api.post(`/api/favorites/${listingId}`);
+        setFavoriteIds((prev) => new Set(prev).add(listingId));
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to update favorite");
+    }
+  };
 
   // ✅ helper: convert /uploads/file.jpg -> full URL
   const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
@@ -554,7 +605,12 @@ const SearchPage = () => {
                 {loading
                   ? null
                   : sortedVehicles.map((vehicle) => (
-                      <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                      <VehicleCard
+                        key={vehicle.id}
+                        vehicle={vehicle}
+                        isSaved={favoriteIds.has(vehicle.id)}
+                        onSave={() => toggleFavorite(vehicle.id)}
+                      />
                     ))}
               </div>
 
