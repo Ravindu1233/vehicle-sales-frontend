@@ -50,6 +50,10 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [sortBy, setSortBy] = useState<
+    "latest" | "price-low" | "price-high" | "mileage" | "year"
+  >("latest");
+
   const query = searchParams.get("q") || "";
   const make = searchParams.get("make") || "";
 
@@ -228,7 +232,33 @@ const SearchPage = () => {
 
       return matchesQuery && matchesMake && matchesFuel && matchesPrice;
     });
-  }, [mappedVehicles, query, make, selectedMakes, selectedFuelTypes, priceRange]);
+  }, [
+    mappedVehicles,
+    query,
+    make,
+    selectedMakes,
+    selectedFuelTypes,
+    priceRange,
+  ]);
+
+  const sortedVehicles = useMemo(() => {
+    const list = [...filteredVehicles];
+
+    switch (sortBy) {
+      case "price-low":
+        return list.sort((a, b) => a.price - b.price);
+      case "price-high":
+        return list.sort((a, b) => b.price - a.price);
+      case "mileage":
+        return list.sort((a, b) => a.mileage - b.mileage);
+      case "year":
+        return list.sort((a, b) => b.year - a.year);
+      case "latest":
+      default:
+        // Mongo ObjectId timestamp order (safe fallback)
+        return list.sort((a, b) => String(b._id).localeCompare(String(a._id)));
+    }
+  }, [filteredVehicles, sortBy]);
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -236,17 +266,17 @@ const SearchPage = () => {
       <div className="filter-section">
         <h3 className="font-semibold text-foreground mb-4">Price Range</h3>
         <div className="space-y-4">
-       <Slider
-  value={priceRange}
-  onValueChange={(val) => {
-    const next: [number, number] = [val[0] ?? 0, val[1] ?? PRICE_MAX];
-    setPriceRange(next);
-  }}
-  min={0}
-  max={PRICE_MAX}
-  step={50000}
-  className="w-full"
-/>
+          <Slider
+            value={priceRange}
+            onValueChange={(val) => {
+              const next: [number, number] = [val[0] ?? 0, val[1] ?? PRICE_MAX];
+              setPriceRange(next);
+            }}
+            min={0}
+            max={PRICE_MAX}
+            step={50000}
+            className="w-full"
+          />
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
@@ -364,7 +394,10 @@ const SearchPage = () => {
                 />
               </div>
 
-              <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+              <Sheet
+                open={mobileFiltersOpen}
+                onOpenChange={setMobileFiltersOpen}
+              >
                 <SheetTrigger asChild>
                   <Button variant="outline" className="lg:hidden h-12">
                     <SlidersHorizontal className="w-5 h-5 mr-2" />
@@ -423,12 +456,17 @@ const SearchPage = () => {
                   <p className="text-muted-foreground">
                     {loading
                       ? "Loading..."
-                      : `${filteredVehicles.length} vehicles found`}
+                      : `${sortedVehicles.length} vehicles found
+
+`}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Select defaultValue="latest">
+                  <Select
+                    value={sortBy}
+                    onValueChange={(v) => setSortBy(v as any)}
+                  >
                     <SelectTrigger className="w-44">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
@@ -515,7 +553,7 @@ const SearchPage = () => {
               >
                 {loading
                   ? null
-                  : filteredVehicles.map((vehicle) => (
+                  : sortedVehicles.map((vehicle) => (
                       <VehicleCard key={vehicle.id} vehicle={vehicle} />
                     ))}
               </div>
