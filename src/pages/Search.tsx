@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Search,
   SlidersHorizontal,
   Grid3X3,
   List,
-  ChevronDown,
   X,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -16,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import {
-  mockVehicles,
   carMakes,
   fuelTypes,
   transmissions,
@@ -37,6 +35,10 @@ import {
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import api from "@/lib/api"; // ✅ ADD
+
+
+const PRICE_MAX = 100000000; // ✅ 100 million LKR
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
@@ -45,6 +47,11 @@ const SearchPage = () => {
   const [selectedMakes, setSelectedMakes] = useState<string[]>([]);
   const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // ✅ backend data
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const query = searchParams.get("q") || "";
   const make = searchParams.get("make") || "";
@@ -66,11 +73,126 @@ const SearchPage = () => {
   const clearFilters = () => {
     setSelectedMakes([]);
     setSelectedFuelTypes([]);
-    setPriceRange([0, 200000]);
+    setPriceRange([0, PRICE_MAX]); // ✅ changed max
   };
 
   const activeFiltersCount =
-    selectedMakes.length + selectedFuelTypes.length + (priceRange[0] > 0 || priceRange[1] < 200000 ? 1 : 0);
+    selectedMakes.length +
+    selectedFuelTypes.length +
+    (priceRange[0] > 0 || priceRange[1] < PRICE_MAX ? 1 : 0); // ✅ changed max
+
+  // ✅ Fetch approved listings (backend already filters admin_status for public users)
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await api.get("/api/listings");
+        const data = Array.isArray(res.data) ? res.data : [];
+        setVehicles(data);
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to load listings.";
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListings();
+  }, []);
+
+  // ✅ helper: convert /uploads/file.jpg -> full URL
+  const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+  // ✅ Map backend listing -> VehicleCard-friendly object
+  const mappedVehicles = useMemo(() => {
+    return vehicles.map((l) => {
+      // backend returns images as array of objects: { image_url: "/uploads/xx" }
+      const firstImgPath =
+        l?.images?.[0]?.image_url ||
+        l?.images?.[0]?.url ||
+        (typeof l?.images?.[0] === "string" ? l.images[0] : "") ||
+        "";
+
+      const image =
+        typeof firstImgPath === "string" && firstImgPath.startsWith("/uploads")
+          ? `${apiUrl}${firstImgPath}`
+          : firstImgPath;
+
+      // also map every image in images[] to full URL (optional but good)
+      const mappedImages = Array.isArray(l?.images)
+        ? l.images.map((img: any) => {
+            const p = img?.image_url || img?.url || img;
+            const full =
+              typeof p === "string" && p.startsWith("/uploads")
+                ? `${apiUrl}${p}`
+                : p;
+            return {
+              ...img,
+              image_url: full,
+              url: full,
+            };
+          })
+        : [];
+
+      return {
+        id: l?._id || l?.id,
+        _id: l?._id || l?.id,
+
+        title:
+          l?.title ||
+          `${l?.year || ""} ${l?.make || ""} ${l?.model || ""}`.trim(),
+
+        make: l?.make || "",
+        model: l?.model || "",
+        year: l?.year || 0,
+        price: l?.price || 0,
+        mileage: l?.mileage || 0,
+        fuelType: l?.fuel_type || l?.fuelType || "",
+        transmission: l?.transmission || "",
+        location: l?.location || "",
+        color: l?.colour || l?.color || "",
+        description: l?.description || "",
+        features: Array.isArray(l?.features) ? l.features : [],
+
+        // ✅ required for VehicleCard TS type (fixes your error)
+        source: l?.source_url || "direct",
+
+        // ✅ card main image
+        image: image || "",
+
+        // keep extra fields
+        images: mappedImages,
+        admin_status: l?.admin_status,
+      };
+    });
+  }, [vehicles, apiUrl]);
+
+  // ✅ Apply frontend filtering (UI unchanged)
+  const filteredVehicles = useMemo(() => {
+    const q = (query || make || "").toLowerCase().trim();
+
+    return mappedVehicles.filter((v) => {
+      const matchesQuery =
+        !q || `${v.make} ${v.model} ${v.title}`.toLowerCase().includes(q);
+
+      const matchesMake =
+        selectedMakes.length === 0 || selectedMakes.includes(v.make);
+
+      const matchesFuel =
+        selectedFuelTypes.length === 0 ||
+        selectedFuelTypes.includes(v.fuelType);
+
+      const matchesPrice =
+        (Number(v.price) || 0) >= priceRange[0] &&
+        (Number(v.price) || 0) <= priceRange[1];
+
+      return matchesQuery && matchesMake && matchesFuel && matchesPrice;
+    });
+  }, [mappedVehicles, query, make, selectedMakes, selectedFuelTypes, priceRange]);
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -82,16 +204,16 @@ const SearchPage = () => {
             value={priceRange}
             onValueChange={setPriceRange}
             min={0}
-            max={200000}
-            step={5000}
+            max={PRICE_MAX} // ✅ changed max
+            step={50000} // ✅ better step for LKR (still same UI)
             className="w-full"
           />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              ${priceRange[0].toLocaleString()}
+              LKR {priceRange[0].toLocaleString()}
             </span>
             <span className="text-muted-foreground">
-              ${priceRange[1].toLocaleString()}
+              LKR {priceRange[1].toLocaleString()}
             </span>
           </div>
         </div>
@@ -141,7 +263,7 @@ const SearchPage = () => {
         </div>
       </div>
 
-      {/* Year Range */}
+      {/* Year Range (UI only - not wired) */}
       <div className="filter-section">
         <h3 className="font-semibold text-foreground mb-4">Year</h3>
         <div className="flex gap-2">
@@ -201,6 +323,7 @@ const SearchPage = () => {
                   defaultValue={query || make}
                 />
               </div>
+
               <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="lg:hidden h-12">
@@ -213,6 +336,7 @@ const SearchPage = () => {
                     )}
                   </Button>
                 </SheetTrigger>
+
                 <SheetContent side="left" className="w-80 overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle>Filters</SheetTitle>
@@ -255,7 +379,7 @@ const SearchPage = () => {
                     {query || make ? `Results for "${query || make}"` : "All Vehicles"}
                   </h1>
                   <p className="text-muted-foreground">
-                    {mockVehicles.length} vehicles found
+                    {loading ? "Loading..." : `${filteredVehicles.length} vehicles found`}
                   </p>
                 </div>
 
@@ -298,6 +422,13 @@ const SearchPage = () => {
                 </div>
               </div>
 
+              {/* Error */}
+              {error ? (
+                <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {error}
+                </div>
+              ) : null}
+
               {/* Active Filters */}
               {(selectedMakes.length > 0 || selectedFuelTypes.length > 0) && (
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -334,12 +465,14 @@ const SearchPage = () => {
                     : "grid-cols-1"
                 }`}
               >
-                {mockVehicles.map((vehicle) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} />
-                ))}
+                {loading
+                  ? null
+                  : filteredVehicles.map((vehicle) => (
+                      <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                    ))}
               </div>
 
-              {/* Pagination */}
+              {/* Pagination (UI kept same) */}
               <div className="flex items-center justify-center gap-2 mt-12">
                 <Button variant="outline" size="sm" disabled>
                   Previous
