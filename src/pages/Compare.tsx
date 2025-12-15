@@ -34,7 +34,9 @@ interface CompareVehicle {
 type BackendListing = any;
 
 const Compare = () => {
-  const [selectedVehicles, setSelectedVehicles] = useState<CompareVehicle[]>([]);
+  const [selectedVehicles, setSelectedVehicles] = useState<CompareVehicle[]>(
+    []
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -228,7 +230,9 @@ const Compare = () => {
   ];
 
   // ✅ features section should appear only if at least one vehicle has features
-  const hasAnyFeatures = selectedVehicles.some((v) => (v.features?.length || 0) > 0);
+  const hasAnyFeatures = selectedVehicles.some(
+    (v) => (v.features?.length || 0) > 0
+  );
 
   const allFeatures = useMemo(() => {
     if (!hasAnyFeatures) return [];
@@ -347,7 +351,7 @@ const Compare = () => {
                   Specifications
                 </h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full table-fixed">
                     <tbody>
                       {specRows.map((row) => {
                         const bestId = getBestValue(row.key);
@@ -362,32 +366,37 @@ const Compare = () => {
                             {selectedVehicles.map((vehicle) => (
                               <td
                                 key={vehicle.id}
-                                className={`py-3 px-4 text-center ${
+                                className={`w-1/4 py-3 px-4 text-center ${
                                   bestId === vehicle.id
                                     ? "text-success font-semibold"
                                     : "text-foreground"
                                 }`}
                               >
                                 {row.format(
-                                  vehicle[row.key as keyof CompareVehicle] as never
+                                  vehicle[
+                                    row.key as keyof CompareVehicle
+                                  ] as never
                                 )}
                                 {bestId === vehicle.id && (
-                                  <Badge variant="verified" className="ml-2 text-xs">
+                                  <Badge
+                                    variant="verified"
+                                    className="ml-2 text-xs"
+                                  >
                                     Best
                                   </Badge>
                                 )}
                               </td>
                             ))}
-                            {[...Array(maxVehicles - selectedVehicles.length)].map(
-                              (_, i) => (
-                                <td
-                                  key={`empty-${i}`}
-                                  className="py-3 px-4 text-center text-muted-foreground"
-                                >
-                                  —
-                                </td>
-                              )
-                            )}
+                            {[
+                              ...Array(maxVehicles - selectedVehicles.length),
+                            ].map((_, i) => (
+                              <td
+                                key={`empty-${i}`}
+                                className="w-1/4 py-3 px-4 text-center text-muted-foreground"
+                              >
+                                —
+                              </td>
+                            ))}
                           </tr>
                         );
                       })}
@@ -402,8 +411,9 @@ const Compare = () => {
                   <h2 className="text-xl font-bold text-foreground mb-4">
                     Features
                   </h2>
+
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full table-fixed">
                       <tbody>
                         {allFeatures.map((feature) => (
                           <tr
@@ -413,8 +423,12 @@ const Compare = () => {
                             <td className="py-3 pr-4 font-medium text-muted-foreground w-32">
                               {feature}
                             </td>
+
                             {selectedVehicles.map((vehicle) => (
-                              <td key={vehicle.id} className="py-3 px-4 text-center">
+                              <td
+                                key={vehicle.id}
+                                className="w-1/4 py-3 px-4 text-center"
+                              >
                                 {vehicle.features.includes(feature) ? (
                                   <Check className="w-5 h-5 text-success mx-auto" />
                                 ) : (
@@ -422,16 +436,17 @@ const Compare = () => {
                                 )}
                               </td>
                             ))}
-                            {[...Array(maxVehicles - selectedVehicles.length)].map(
-                              (_, i) => (
-                                <td
-                                  key={`empty-${i}`}
-                                  className="py-3 px-4 text-center text-muted-foreground"
-                                >
-                                  —
-                                </td>
-                              )
-                            )}
+
+                            {[
+                              ...Array(maxVehicles - selectedVehicles.length),
+                            ].map((_, i) => (
+                              <td
+                                key={`empty-feature-${feature}-${i}`}
+                                className="w-1/4 py-3 px-4 text-center text-muted-foreground"
+                              >
+                                —
+                              </td>
+                            ))}
                           </tr>
                         ))}
                       </tbody>
@@ -449,8 +464,8 @@ const Compare = () => {
                 No Vehicles Selected
               </h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Add vehicles to compare their specifications, features, and prices
-                side by side.
+                Add vehicles to compare their specifications, features, and
+                prices side by side.
               </p>
               <Dialog
                 open={dialogOpen}
