@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import {
   Heart,
@@ -16,10 +16,12 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
+/* ❌ REMOVED hardcoded count for listings */
 const sidebarItems = [
   { href: "/dashboard", label: "Overview", icon: Sparkles },
-  { href: "/dashboard/listings", label: "My Listings", icon: Car, count: 4 },
+  { href: "/dashboard/listings", label: "My Listings", icon: Car },
   { href: "/dashboard/saved", label: "Saved Listings", icon: Heart, count: 12 },
   { href: "/dashboard/alerts", label: "Alerts", icon: Bell, count: 3 },
   { href: "/dashboard/history", label: "Recently Viewed", icon: Clock },
@@ -30,6 +32,23 @@ const sidebarItems = [
 const DashboardLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  /* ✅ REAL listing count */
+  const [myListingsCount, setMyListingsCount] = useState<number>(0);
+
+  /* ✅ Fetch logged-in user's listings */
+  useEffect(() => {
+    const fetchMyListingsCount = async () => {
+      try {
+        const res = await api.get("/api/listings/mine");
+        setMyListingsCount(Array.isArray(res.data) ? res.data.length : 0);
+      } catch (error) {
+        console.error("Failed to fetch listing count");
+      }
+    };
+
+    fetchMyListingsCount();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -79,29 +98,37 @@ const DashboardLayout = () => {
 
                 {/* Navigation */}
                 <nav className="space-y-1">
-                  {sidebarItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={cn(
-                        "flex items-center justify-between px-4 py-3 rounded-lg transition-colors",
-                        location.pathname === item.href
-                          ? "bg-accent/10 text-accent"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5" />
-                        <span className="font-medium">{item.label}</span>
-                      </div>
-                      {item.count && (
-                        <Badge variant="secondary" className="text-xs">
-                          {item.count}
-                        </Badge>
-                      )}
-                    </Link>
-                  ))}
+                  {sidebarItems.map((item) => {
+                    const count =
+                      item.href === "/dashboard/listings"
+                        ? myListingsCount
+                        : item.count;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          "flex items-center justify-between px-4 py-3 rounded-lg transition-colors",
+                          location.pathname === item.href
+                            ? "bg-accent/10 text-accent"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon className="w-5 h-5" />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+
+                        {typeof count === "number" && count > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {count}
+                          </Badge>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </nav>
               </div>
             </aside>
