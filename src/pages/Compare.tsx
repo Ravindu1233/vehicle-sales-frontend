@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { X, Plus, Check, Minus, Car, ArrowLeft, Search } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { mockVehicles } from "@/data/mockVehicles";
+import api from "@/lib/api";
 
 interface CompareVehicle {
   id: string;
@@ -25,57 +25,130 @@ interface CompareVehicle {
   fuelType: string;
   transmission: string;
   image: string;
-  engine: string;
+
   condition: string;
   color: string;
-  bodyType: string;
   features: string[];
 }
+
+type BackendListing = any;
 
 const Compare = () => {
   const [selectedVehicles, setSelectedVehicles] = useState<CompareVehicle[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ✅ backend data
+  const [vehicles, setVehicles] = useState<BackendListing[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const maxVehicles = 4;
 
-  const addVehicle = (vehicle: typeof mockVehicles[0]) => {
-    if (selectedVehicles.length < maxVehicles) {
-      const compareVehicle: CompareVehicle = {
-        id: vehicle.id,
-        title: vehicle.title,
-        price: vehicle.price,
-        year: vehicle.year,
-        mileage: vehicle.mileage,
-        fuelType: vehicle.fuelType,
-        transmission: vehicle.transmission,
-        image: vehicle.image,
-        engine: "2.0L 4-Cylinder",
-        condition: "Used",
-        color: "Silver",
-        bodyType: "Sedan",
-        features: ["ABS", "Airbags", "AC", "Power Steering", "Bluetooth"],
+  // ✅ helper: convert /uploads/file.jpg -> full URL
+  const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+  // ✅ Fetch approved listings
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await api.get("/api/listings");
+        const data = Array.isArray(res.data) ? res.data : [];
+        setVehicles(data);
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to load listings.";
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListings();
+  }, []);
+
+  // ✅ Map backend -> selection objects
+  const mappedVehicles = useMemo(() => {
+    return vehicles.map((l: any) => {
+      const firstImgPath =
+        l?.images?.[0]?.image_url ||
+        l?.images?.[0]?.url ||
+        (typeof l?.images?.[0] === "string" ? l.images[0] : "") ||
+        "";
+
+      const image =
+        typeof firstImgPath === "string" && firstImgPath.startsWith("/uploads")
+          ? `${apiUrl}${firstImgPath}`
+          : firstImgPath;
+
+      // ✅ sanitize features (remove empty strings, trim, ensure array)
+      const rawFeatures = Array.isArray(l?.features) ? l.features : [];
+      const cleanedFeatures = rawFeatures
+        .map((f: any) => (typeof f === "string" ? f.trim() : ""))
+        .filter((f: string) => !!f);
+
+      return {
+        id: l?._id || l?.id,
+        title:
+          l?.title ||
+          `${l?.year || ""} ${l?.make || ""} ${l?.model || ""}`.trim(),
+        price: Number(l?.price) || 0,
+        year: Number(l?.year) || 0,
+        mileage: Number(l?.mileage) || 0,
+        fuelType: l?.fuel_type || l?.fuelType || "",
+        transmission: l?.transmission || "",
+        image: image || "",
+
+        color: l?.colour || l?.color || "—",
+        features: cleanedFeatures, // ✅ use cleaned features only
       };
-      setSelectedVehicles([...selectedVehicles, compareVehicle]);
-      setDialogOpen(false);
-      setSearchQuery("");
-    }
+    });
+  }, [vehicles, apiUrl]);
+
+  const addVehicle = (vehicle: (typeof mappedVehicles)[0]) => {
+    if (selectedVehicles.length >= maxVehicles) return;
+
+    const compareVehicle: CompareVehicle = {
+      id: vehicle.id,
+      title: vehicle.title,
+      price: vehicle.price,
+      year: vehicle.year,
+      mileage: vehicle.mileage,
+      fuelType: vehicle.fuelType,
+      transmission: vehicle.transmission,
+      image: vehicle.image,
+
+      // UI-only label (backend doesn't have it)
+      condition: "Used",
+      color: vehicle.color || "—",
+
+      // ✅ IMPORTANT: no fallback features
+      features: Array.isArray(vehicle.features) ? vehicle.features : [],
+    };
+
+    setSelectedVehicles((prev) => [...prev, compareVehicle]);
+    setDialogOpen(false);
+    setSearchQuery("");
   };
 
   const removeVehicle = (id: string) => {
-    setSelectedVehicles(selectedVehicles.filter((v) => v.id !== id));
+    setSelectedVehicles((prev) => prev.filter((v) => v.id !== id));
   };
 
-  const availableVehicles = mockVehicles.filter(
-    (v) => !selectedVehicles.find((sv) => sv.id === v.id)
-  );
+  const availableVehicles = useMemo(() => {
+    return mappedVehicles.filter(
+      (v) => !selectedVehicles.find((sv) => sv.id === v.id)
+    );
+  }, [mappedVehicles, selectedVehicles]);
 
   const filteredVehicles = useMemo(() => {
     if (!searchQuery.trim()) return availableVehicles;
-    const query = searchQuery.toLowerCase();
-    return availableVehicles.filter((v) =>
-      v.title.toLowerCase().includes(query)
-    );
+    const q = searchQuery.toLowerCase();
+    return availableVehicles.filter((v) => v.title.toLowerCase().includes(q));
   }, [availableVehicles, searchQuery]);
 
   const VehicleSelectionContent = () => (
@@ -83,6 +156,7 @@ const Compare = () => {
       <DialogHeader>
         <DialogTitle>Select a Vehicle to Compare</DialogTitle>
       </DialogHeader>
+
       <div className="relative mt-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
@@ -92,8 +166,19 @@ const Compare = () => {
           className="pl-10"
         />
       </div>
+
+      {error ? (
+        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 max-h-[50vh] overflow-y-auto">
-        {filteredVehicles.length > 0 ? (
+        {loading ? (
+          <div className="col-span-2 py-8 text-center text-muted-foreground">
+            Loading vehicles...
+          </div>
+        ) : filteredVehicles.length > 0 ? (
           filteredVehicles.map((v) => (
             <button
               key={v.id}
@@ -125,24 +210,37 @@ const Compare = () => {
   );
 
   const specRows = [
-    { label: "Price", key: "price", format: (v: number) => `Rs. ${v.toLocaleString()}` },
+    {
+      label: "Price",
+      key: "price",
+      format: (v: number) => `Rs. ${v.toLocaleString()}`,
+    },
     { label: "Year", key: "year", format: (v: number) => v.toString() },
-    { label: "Mileage", key: "mileage", format: (v: number) => `${v.toLocaleString()} km` },
+    {
+      label: "Mileage",
+      key: "mileage",
+      format: (v: number) => `${v.toLocaleString()} km`,
+    },
     { label: "Fuel Type", key: "fuelType", format: (v: string) => v },
     { label: "Transmission", key: "transmission", format: (v: string) => v },
-    { label: "Engine", key: "engine", format: (v: string) => v },
     { label: "Condition", key: "condition", format: (v: string) => v },
     { label: "Color", key: "color", format: (v: string) => v },
-    { label: "Body Type", key: "bodyType", format: (v: string) => v },
   ];
 
-  const allFeatures = Array.from(
-    new Set(selectedVehicles.flatMap((v) => v.features))
-  ).sort();
+  // ✅ features section should appear only if at least one vehicle has features
+  const hasAnyFeatures = selectedVehicles.some((v) => (v.features?.length || 0) > 0);
+
+  const allFeatures = useMemo(() => {
+    if (!hasAnyFeatures) return [];
+    return Array.from(new Set(selectedVehicles.flatMap((v) => v.features)))
+      .map((f) => (typeof f === "string" ? f.trim() : ""))
+      .filter((f) => !!f)
+      .sort();
+  }, [selectedVehicles, hasAnyFeatures]);
 
   const getBestValue = (key: string) => {
     if (selectedVehicles.length < 2) return null;
-    
+
     if (key === "price") {
       const min = Math.min(...selectedVehicles.map((v) => v.price));
       return selectedVehicles.find((v) => v.price === min)?.id;
@@ -213,16 +311,21 @@ const Compare = () => {
                       </div>
                     </div>
                   ) : (
-                    <Dialog open={dialogOpen && selectedVehicles.length === index} onOpenChange={(open) => {
-                      setDialogOpen(open);
-                      if (!open) setSearchQuery("");
-                    }}>
+                    <Dialog
+                      open={dialogOpen && selectedVehicles.length === index}
+                      onOpenChange={(open) => {
+                        setDialogOpen(open);
+                        if (!open) setSearchQuery("");
+                      }}
+                    >
                       <DialogTrigger asChild>
                         <button className="w-full h-48 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-accent transition-colors">
                           <div className="w-12 h-12 rounded-full border-2 border-dashed border-current flex items-center justify-center">
                             <Plus className="w-6 h-6" />
                           </div>
-                          <span className="text-sm font-medium">Add Vehicle</span>
+                          <span className="text-sm font-medium">
+                            Add Vehicle
+                          </span>
                         </button>
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl max-h-[80vh]">
@@ -265,7 +368,9 @@ const Compare = () => {
                                     : "text-foreground"
                                 }`}
                               >
-                                {row.format(vehicle[row.key as keyof CompareVehicle] as never)}
+                                {row.format(
+                                  vehicle[row.key as keyof CompareVehicle] as never
+                                )}
                                 {bestId === vehicle.id && (
                                   <Badge variant="verified" className="ml-2 text-xs">
                                     Best
@@ -292,7 +397,7 @@ const Compare = () => {
               </div>
 
               {/* Features Comparison */}
-              {allFeatures.length > 0 && (
+              {hasAnyFeatures && allFeatures.length > 0 && (
                 <div className="p-6">
                   <h2 className="text-xl font-bold text-foreground mb-4">
                     Features
@@ -309,10 +414,7 @@ const Compare = () => {
                               {feature}
                             </td>
                             {selectedVehicles.map((vehicle) => (
-                              <td
-                                key={vehicle.id}
-                                className="py-3 px-4 text-center"
-                              >
+                              <td key={vehicle.id} className="py-3 px-4 text-center">
                                 {vehicle.features.includes(feature) ? (
                                   <Check className="w-5 h-5 text-success mx-auto" />
                                 ) : (
@@ -350,10 +452,13 @@ const Compare = () => {
                 Add vehicles to compare their specifications, features, and prices
                 side by side.
               </p>
-              <Dialog open={dialogOpen} onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (!open) setSearchQuery("");
-              }}>
+              <Dialog
+                open={dialogOpen}
+                onOpenChange={(open) => {
+                  setDialogOpen(open);
+                  if (!open) setSearchQuery("");
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
