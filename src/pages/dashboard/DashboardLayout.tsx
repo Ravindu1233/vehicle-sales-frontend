@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 
-/* ❌ REMOVED hardcoded count for listings */
 const sidebarItems = [
   { href: "/dashboard", label: "Overview", icon: Sparkles },
   { href: "/dashboard/listings", label: "My Listings", icon: Car },
@@ -32,12 +31,21 @@ const sidebarItems = [
 const DashboardLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  /* ✅ REAL listing count */
   const [myListingsCount, setMyListingsCount] = useState<number>(0);
+  const [userFullName, setUserFullName] = useState<string>("");
 
-  /* ✅ Fetch logged-in user's listings */
   useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const res = await api.get("/api/users/me");
+        setUserFullName(res.data.full_name); // Set the full name from the response
+      } catch (error) {
+        console.error("Failed to fetch user details");
+      }
+    };
+
+    fetchUserDetails();
+
     const fetchMyListingsCount = async () => {
       try {
         const res = await api.get("/api/listings/mine");
@@ -57,7 +65,6 @@ const DashboardLayout = () => {
       <div className="flex-1 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex gap-8">
-            {/* Mobile Sidebar Toggle */}
             <Button
               variant="outline"
               size="icon"
@@ -71,7 +78,6 @@ const DashboardLayout = () => {
               )}
             </Button>
 
-            {/* Sidebar */}
             <aside
               className={cn(
                 "fixed lg:static inset-y-0 left-0 z-40 w-64 bg-card border-r border-border lg:border lg:rounded-xl transform transition-transform lg:transform-none",
@@ -81,22 +87,24 @@ const DashboardLayout = () => {
               )}
             >
               <div className="h-full lg:h-auto p-4 pt-20 lg:pt-4 overflow-y-auto">
-                {/* User Info */}
                 <div className="flex items-center gap-3 p-4 mb-4">
                   <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center">
                     <span className="text-lg font-bold text-accent-foreground">
-                      JD
+                      {userFullName ? userFullName[0] : "JD"}{" "}
+                      {/* Display first letter of name */}
                     </span>
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">John Doe</p>
+                    <p className="font-semibold text-foreground">
+                      {userFullName}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       john@example.com
-                    </p>
+                    </p>{" "}
+                    {/* You can also display the email here */}
                   </div>
                 </div>
 
-                {/* Navigation */}
                 <nav className="space-y-1">
                   {sidebarItems.map((item) => {
                     const count =
@@ -133,7 +141,6 @@ const DashboardLayout = () => {
               </div>
             </aside>
 
-            {/* Overlay */}
             {sidebarOpen && (
               <div
                 className="fixed inset-0 bg-foreground/50 z-30 lg:hidden"
@@ -141,7 +148,6 @@ const DashboardLayout = () => {
               />
             )}
 
-            {/* Main Content */}
             <main className="flex-1 min-w-0">
               <Outlet />
             </main>

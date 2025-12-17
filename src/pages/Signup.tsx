@@ -11,14 +11,19 @@ const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    name: "", // Full Name
     email: "",
     password: "",
+    contact_number: "", // Optional
+    address: "", // Optional
+    city: "", // Optional
+    zip_code: "", // Optional
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Handle the form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -26,18 +31,25 @@ const Signup = () => {
 
     try {
       const res = await api.post("/api/auth/register", {
-        full_name: formData.name,
+        full_name: formData.name, // Sending full name to backend
         email: formData.email,
         password: formData.password,
+        contact_number: formData.contact_number, // Optional
+        address: formData.address, // Optional
+        city: formData.city, // Optional
+        zip_code: formData.zip_code, // Optional
       });
 
       const { token, user } = res.data;
 
+      // Store user data in local storage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      navigate("/dashboard");
+      // Navigate to dashboard after successful signup
+      navigate("/login");
     } catch (err) {
+      // Handle errors
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
@@ -59,7 +71,8 @@ const Signup = () => {
           <div className="text-center text-primary-foreground">
             <h2 className="text-4xl font-bold mb-4">Start Your Journey</h2>
             <p className="text-xl text-primary-foreground/80 max-w-md">
-              Join thousands of buyers and sellers on the most trusted vehicle marketplace
+              Join thousands of buyers and sellers on the most trusted vehicle
+              marketplace
             </p>
           </div>
         </div>
@@ -74,9 +87,13 @@ const Signup = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-blue-600 flex items-center justify-center">
                 <Car className="w-7 h-7 text-accent-foreground" />
               </div>
-              <span className="font-bold text-2xl text-foreground">AutoHub</span>
+              <span className="font-bold text-2xl text-foreground">
+                AutoHub
+              </span>
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">Create an account</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              Create an account
+            </h1>
             <p className="mt-2 text-muted-foreground">
               Get started with your free account
             </p>
@@ -98,7 +115,7 @@ const Signup = () => {
                 <Input
                   id="name"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder=""
                   className="pl-12"
                   value={formData.name}
                   onChange={(e) =>
@@ -116,7 +133,7 @@ const Signup = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder=""
                   className="pl-12"
                   value={formData.email}
                   onChange={(e) =>
@@ -134,7 +151,7 @@ const Signup = () => {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
+                  placeholder=""
                   className="pl-12 pr-12"
                   value={formData.password}
                   onChange={(e) =>
@@ -159,6 +176,60 @@ const Signup = () => {
               </p>
             </div>
 
+            {/* Additional Fields */}
+            <div className="space-y-2">
+              <Label htmlFor="contact_number">Contact Number</Label>
+              <Input
+                id="contact_number"
+                type="text"
+                placeholder=""
+                value={formData.contact_number}
+                onChange={(e) =>
+                  setFormData({ ...formData, contact_number: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                type="text"
+                placeholder=""
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                type="text"
+                placeholder=""
+                value={formData.city}
+                onChange={(e) =>
+                  setFormData({ ...formData, city: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="zip_code">Zip Code</Label>
+              <Input
+                id="zip_code"
+                type="text"
+                placeholder=""
+                value={formData.zip_code}
+                onChange={(e) =>
+                  setFormData({ ...formData, zip_code: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Terms and Conditions */}
             <div className="flex items-start gap-2">
               <Checkbox id="terms" className="mt-1" />
               <Label
@@ -176,7 +247,13 @@ const Signup = () => {
               </Label>
             </div>
 
-            <Button variant="hero" size="lg" className="w-full" disabled={loading}>
+            {/* Submit Button */}
+            <Button
+              variant="hero"
+              size="lg"
+              className="w-full"
+              disabled={loading}
+            >
               {loading ? "Creating..." : "Create Account"}
             </Button>
           </form>
@@ -231,7 +308,10 @@ const Signup = () => {
           {/* Sign In Link */}
           <p className="text-center text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-accent font-semibold hover:underline">
+            <Link
+              to="/login"
+              className="text-accent font-semibold hover:underline"
+            >
               Sign in
             </Link>
           </p>

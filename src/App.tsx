@@ -15,6 +15,9 @@ import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import SavedListings from "./pages/dashboard/SavedListings";
 import MyListings from "./pages/dashboard/MyListings";
 import Profile from "./pages/dashboard/Profile";
+import Alerts from "./pages/dashboard/Alerts";
+import Settings from "./pages/dashboard/Settings";
+import RecentlyViewed from "./pages/dashboard/RecentlyViewed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,9 +40,9 @@ const App = () => (
             <Route index element={<DashboardOverview />} />
             <Route path="listings" element={<MyListings />} />
             <Route path="saved" element={<SavedListings />} />
-            <Route path="alerts" element={<DashboardOverview />} />
-            <Route path="history" element={<DashboardOverview />} />
-            <Route path="settings" element={<DashboardOverview />} />
+            <Route path="alerts" element={<Alerts />} />
+            <Route path="history" element={<RecentlyViewed />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<NotFound />} />
