@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User, Mail, Phone, MapPin, Lock, Edit2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import api from "@/lib/api"; // Assuming api is set up to handle requests
 
 interface UserProfile {
   firstName: string;
@@ -17,37 +18,92 @@ interface UserProfile {
   city: string;
   state: string;
   zipCode: string;
+  profileImage: string; // Add profile image URL
 }
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main Street",
-    city: "San Francisco",
-    state: "CA",
-    zipCode: "94102",
-  });
+  const [profile, setProfile] = useState<UserProfile | null>(null); // Initially null until data is fetched
+  const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
+  const [profileImage, setProfileImage] = useState<File | null>(null); // Store the new profile image file
 
-  const [editedProfile, setEditedProfile] = useState<UserProfile>(profile);
+  // Fetch user profile from API
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/api/users/me");
+        const userData = res.data;
+        const fetchedProfile: UserProfile = {
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          email: userData.email,
+          phone: userData.contact_number || "",
+          address: userData.address || "",
+          city: userData.city || "",
+          state: userData.state || "",
+          zipCode: userData.zip_code || "",
+          profileImage: userData.profile_image || "", // Set the profile image URL
+        };
+        setProfile(fetchedProfile);
+        setEditedProfile(fetchedProfile);
+      } catch (error) {
+        console.error("Failed to fetch profile data", error);
+      }
+    };
 
-  const handleSave = () => {
-    setProfile(editedProfile);
-    setIsEditing(false);
-    toast.success("Profile updated successfully!");
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      const data = new FormData();
+      // Append all fields to FormData, including the profile image if it exists
+      data.append("first_name", editedProfile?.firstName || "");
+      data.append("last_name", editedProfile?.lastName || "");
+      data.append("email", editedProfile?.email || "");
+      data.append("contact_number", editedProfile?.phone || "");
+      data.append("address", editedProfile?.address || "");
+      data.append("city", editedProfile?.city || "");
+      data.append("zip_code", editedProfile?.zipCode || "");
+
+      if (profileImage) {
+        data.append("profile_image", profileImage); // Append the profile image if available
+      }
+
+      // Send the updated profile to the backend
+      await api.put("/api/users/me", data, {
+        headers: {
+          "Content-Type": "multipart/form-data", // Set correct header for FormData
+        },
+      });
+
+      setProfile(editedProfile);
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
   };
 
   const handleCancel = () => {
-    setEditedProfile(profile);
+    setEditedProfile(profile); // Reset to the original profile
     setIsEditing(false);
   };
 
   const handleChange = (field: keyof UserProfile, value: string) => {
-    setEditedProfile((prev) => ({ ...prev, [field]: value }));
+    if (editedProfile) {
+      setEditedProfile((prev) => ({ ...prev, [field]: value }));
+    }
   };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImage(file); // Set the new profile image
+    }
+  };
+
+  if (!profile) return <div>Loading...</div>; // Show loading state until profile data is fetched
 
   return (
     <div className="space-y-6">
@@ -83,12 +139,18 @@ const Profile = () => {
         <CardHeader>
           <div className="flex items-center gap-6">
             <Avatar className="w-24 h-24">
-              <AvatarImage src="" />
+              {/* Display profile image if available */}
+              <AvatarImage
+                src={
+                  profile.profileImage ? `/uploads/${profile.profileImage}` : ""
+                }
+              />
               <AvatarFallback className="text-2xl bg-accent text-accent-foreground">
                 {profile.firstName[0]}
                 {profile.lastName[0]}
               </AvatarFallback>
             </Avatar>
+
             <div>
               <h2 className="text-xl font-semibold text-foreground">
                 {profile.firstName} {profile.lastName}
@@ -96,7 +158,14 @@ const Profile = () => {
               <p className="text-muted-foreground">{profile.email}</p>
               {isEditing && (
                 <Button variant="link" className="px-0 text-accent">
-                  Change Profile Photo
+                  <label htmlFor="profileImage">Change Profile Photo</label>
+                  <input
+                    type="file"
+                    id="profileImage"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
                 </Button>
               )}
             </div>
@@ -211,18 +280,6 @@ const Profile = () => {
                 />
               ) : (
                 <p className="text-foreground py-2">{profile.city}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              {isEditing ? (
-                <Input
-                  id="state"
-                  value={editedProfile.state}
-                  onChange={(e) => handleChange("state", e.target.value)}
-                />
-              ) : (
-                <p className="text-foreground py-2">{profile.state}</p>
               )}
             </div>
             <div className="space-y-2">

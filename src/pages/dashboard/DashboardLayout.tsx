@@ -33,12 +33,14 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [myListingsCount, setMyListingsCount] = useState<number>(0);
   const [userFullName, setUserFullName] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
 
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
         const res = await api.get("/api/users/me");
-        setUserFullName(res.data.full_name); // Set the full name from the response
+        setUserFullName(`${res.data.first_name} ${res.data.last_name}`); // Full name
+        setUserEmail(res.data.email); // Email
       } catch (error) {
         console.error("Failed to fetch user details");
       }
@@ -87,24 +89,24 @@ const DashboardLayout = () => {
               )}
             >
               <div className="h-full lg:h-auto p-4 pt-20 lg:pt-4 overflow-y-auto">
-                <div className="flex items-center gap-3 p-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center">
-                    <span className="text-lg font-bold text-accent-foreground">
-                      {userFullName ? userFullName[0] : "JD"}{" "}
-                      {/* Display first letter of name */}
+                {/* User info section */}
+                <div className="flex items-center flex-col gap-3 p-4 mb-4">
+                  <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
+                    <span className="text-2xl font-bold text-accent-foreground">
+                      {userFullName ? userFullName[0] : "JD"}
                     </span>
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      {userFullName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      john@example.com
-                    </p>{" "}
-                    {/* You can also display the email here */}
-                  </div>
+                  {/* Full Name */}
+                  <p className="font-semibold text-foreground text-center">
+                    {userFullName}
+                  </p>
+                  {/* Email */}
+                  <p className="text-sm text-muted-foreground text-center">
+                    {userEmail}
+                  </p>
                 </div>
 
+                {/* Sidebar Items */}
                 <nav className="space-y-1">
                   {sidebarItems.map((item) => {
                     const count =
