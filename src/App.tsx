@@ -14,6 +14,7 @@ import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import SavedListings from "./pages/dashboard/SavedListings";
 import MyListings from "./pages/dashboard/MyListings";
+import Profile from "./pages/dashboard/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +40,7 @@ const App = () => (
             <Route path="alerts" element={<DashboardOverview />} />
             <Route path="history" element={<DashboardOverview />} />
             <Route path="settings" element={<DashboardOverview />} />
-            <Route path="profile" element={<DashboardOverview />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ const SavedListings = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ✅ IMPORTANT: backend base URL (for /uploads paths)
+  const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
   // ✅ Load saved listings from backend
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -20,7 +23,7 @@ const SavedListings = () => {
       setError("");
 
       try {
-        // GET /api/favorites/mine (protect route)
+        // GET /api/favorites/mine (protected route)
         const res = await api.get("/api/favorites/mine");
 
         // backend returns: [{ _id, user_id, listing_id: { ...VehicleListing } }]
@@ -42,6 +45,41 @@ const SavedListings = () => {
 
     fetchFavorites();
   }, []);
+
+  // ✅ Map backend listings -> VehicleCard expected shape (fix image + ids)
+  const mappedSavedVehicles = useMemo(() => {
+    return savedVehicles.map((v) => {
+      const firstImgPath =
+        v?.images?.[0]?.image_url ||
+        v?.images?.[0]?.url ||
+        (typeof v?.images?.[0] === "string"
+          ? v.images[0]
+          : "/placeholder-car.jpg"); // fallback to placeholder if no image
+
+      const image =
+        typeof firstImgPath === "string" && firstImgPath.startsWith("/uploads")
+          ? `${apiUrl}${firstImgPath}`
+          : firstImgPath;
+
+      return {
+        id: v?._id || v?.id,
+        title:
+          v?.title ||
+          `${v?.year || ""} ${v?.make || ""} ${v?.model || ""}`.trim(),
+        price: Number(v?.price || 0),
+        year: Number(v?.year || 0),
+        mileage: Number(v?.mileage || 0),
+        fuelType: v?.fuel_type || v?.fuelType || "",
+        transmission: v?.transmission || "",
+        location: v?.location || "",
+        source: v?.source_url || "direct",
+        image: image || "/placeholder-car.jpg", // fallback to placeholder if image URL is empty
+
+        // keep original if you need later
+        _raw: v,
+      };
+    });
+  }, [savedVehicles, apiUrl]);
 
   // ✅ Remove one favorite
   const handleRemove = async (listingId: string) => {
@@ -84,11 +122,13 @@ const SavedListings = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Saved Listings</h1>
           <p className="text-muted-foreground mt-1">
-            {loading ? "Loading..." : `${savedVehicles.length} vehicles saved`}
+            {loading
+              ? "Loading..."
+              : `${mappedSavedVehicles.length} vehicles saved`}
           </p>
         </div>
 
-        {!loading && savedVehicles.length > 0 && (
+        {!loading && mappedSavedVehicles.length > 0 && (
           <Button
             variant="ghost"
             className="text-destructive"
@@ -108,14 +148,14 @@ const SavedListings = () => {
       ) : null}
 
       {/* Vehicle Grid */}
-      {!loading && savedVehicles.length > 0 ? (
+      {!loading && mappedSavedVehicles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {savedVehicles.map((vehicle) => (
+          {mappedSavedVehicles.map((vehicle) => (
             <VehicleCard
-              key={vehicle?._id}
+              key={vehicle.id}
               vehicle={vehicle}
               isSaved={true}
-              onSave={() => handleRemove(vehicle?._id)}
+              onSave={() => handleRemove(vehicle.id)}
             />
           ))}
         </div>
