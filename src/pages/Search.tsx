@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, Grid3X3, List, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -30,12 +30,12 @@ import api from "@/lib/api"; // ✅ ADD
 const PRICE_MAX = 100000000; // ✅ 100 million LKR
 
 const SearchPage = () => {
-  // ✅ IMPORTANT: use setSearchParams too
+  const scrollRef = useRef<HTMLDivElement>(null); // Create ref for scroll position
+  const [scrollY, setScrollY] = useState(0); // State to store the scroll position
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // ✅ IMPORTANT: default should match PRICE_MAX so it doesn't look "filtered" by default
   const [priceRange, setPriceRange] = useState<[number, number]>([
     0,
     PRICE_MAX,
@@ -46,6 +46,9 @@ const SearchPage = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  const [minYear, setMinYear] = useState<string | null>(null);
+  const [maxYear, setMaxYear] = useState<string | null>(null);
 
   // ✅ backend data
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -59,8 +62,34 @@ const SearchPage = () => {
   const query = searchParams.get("q") || "";
   const make = searchParams.get("make") || "";
 
-  // ✅ 1) Read filters from URL on first mount (refresh/back keeps filters)
+  // Track scroll position when the user scrolls
   useEffect(() => {
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        setScrollY(scrollRef.current.scrollTop); // Save the scroll position
+      }
+    };
+
+    if (scrollRef.current) {
+      scrollRef.current.addEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      if (scrollRef.current) {
+        scrollRef.current.removeEventListener("scroll", handleScroll); // Cleanup event listener
+      }
+    };
+  }, []);
+
+  // Step 3: When filters change, reset scroll position to the saved position
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollY; // Reset scroll to the stored position
+    }
+  }, [minYear, maxYear, selectedMakes, selectedFuelTypes, priceRange]); // Dependencies are the filters
+
+  useEffect(() => {
+    // Check if the URL parameters are set. If not, clear all filters.
     const makesFromUrl =
       searchParams.get("makes")?.split(",").filter(Boolean) || [];
     const fuelsFromUrl =
@@ -69,16 +98,30 @@ const SearchPage = () => {
     const minPrice = Number(searchParams.get("minPrice") ?? 0);
     const maxPrice = Number(searchParams.get("maxPrice") ?? PRICE_MAX);
 
+    // Read minYear and maxYear from URL and update state accordingly
+    const minYearFromUrl = searchParams.get("minYear");
+    const maxYearFromUrl = searchParams.get("maxYear");
+
+    // If no filters in URL, reset to default state
+    if (!makesFromUrl.length) setSelectedMakes([]); // Reset selected makes
+    if (!fuelsFromUrl.length) setSelectedFuelTypes([]); // Reset selected fuel types
+    if (!minYearFromUrl) setMinYear(null); // Reset minYear
+    if (!maxYearFromUrl) setMaxYear(null); // Reset maxYear
+    if (minPrice === 0 && maxPrice === PRICE_MAX) setPriceRange([0, PRICE_MAX]); // Reset price range
+
+    // Apply valid filters if any exist
     setSelectedMakes(makesFromUrl);
     setSelectedFuelTypes(fuelsFromUrl);
 
-    // guard invalid numbers
     const safeMin = Number.isFinite(minPrice) ? minPrice : 0;
     const safeMax = Number.isFinite(maxPrice) ? maxPrice : PRICE_MAX;
 
     setPriceRange([safeMin, safeMax]);
+    setMinYear(minYearFromUrl || null); // Set minYear from URL (if any)
+    setMaxYear(maxYearFromUrl || null); // Set maxYear from URL (if any)
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // only once
+  }, []); // only once, when the page is initially loaded or refreshed
 
   // ✅ 2) Sync current filters -> URL (so refresh/back persists them)
   useEffect(() => {
@@ -113,9 +156,21 @@ const SearchPage = () => {
   };
 
   const clearFilters = () => {
-    setSelectedMakes([]);
-    setSelectedFuelTypes([]);
-    setPriceRange([0, PRICE_MAX]); // ✅ changed max
+    setSelectedMakes([]); // Reset selected makes
+    setSelectedFuelTypes([]); // Reset selected fuel types
+    setPriceRange([0, PRICE_MAX]); // Reset price range
+    setMinYear(null); // Reset min year
+    setMaxYear(null); // Reset max year
+
+    // Clear the URL parameters for all filters
+    const params = new URLSearchParams(searchParams);
+    params.delete("makes"); // Remove makes filter from URL
+    params.delete("fuels"); // Remove fuels filter from URL
+    params.delete("minPrice"); // Remove minPrice from URL
+    params.delete("maxPrice"); // Remove maxPrice from URL
+    params.delete("minYear"); // Remove minYear from URL
+    params.delete("maxYear"); // Remove maxYear from URL
+    setSearchParams(params, { replace: true }); // Sync with URL
   };
 
   const activeFiltersCount =
@@ -281,7 +336,18 @@ const SearchPage = () => {
         (Number(v.price) || 0) >= priceRange[0] &&
         (Number(v.price) || 0) <= priceRange[1];
 
-      return matchesQuery && matchesMake && matchesFuel && matchesPrice;
+      // Add year filter logic
+      const matchesYear =
+        (minYear ? v.year >= parseInt(minYear) : true) &&
+        (maxYear ? v.year <= parseInt(maxYear) : true);
+
+      return (
+        matchesQuery &&
+        matchesMake &&
+        matchesFuel &&
+        matchesPrice &&
+        matchesYear
+      );
     });
   }, [
     mappedVehicles,
@@ -290,6 +356,8 @@ const SearchPage = () => {
     selectedMakes,
     selectedFuelTypes,
     priceRange,
+    minYear, // Add minYear dependency
+    maxYear, // Add maxYear dependency
   ]);
 
   const sortedVehicles = useMemo(() => {
@@ -321,7 +389,11 @@ const SearchPage = () => {
             value={priceRange}
             onValueChange={(val) => {
               const next: [number, number] = [val[0] ?? 0, val[1] ?? PRICE_MAX];
-              setPriceRange(next);
+              setPriceRange(next); // Updates price range
+              const params = new URLSearchParams(searchParams);
+              params.set("minPrice", String(next[0]));
+              params.set("maxPrice", String(next[1]));
+              setSearchParams(params, { replace: true }); // Syncs with URL
             }}
             min={0}
             max={PRICE_MAX}
@@ -349,7 +421,16 @@ const SearchPage = () => {
               <Checkbox
                 id={`make-${makeName}`}
                 checked={selectedMakes.includes(makeName)}
-                onCheckedChange={() => toggleMake(makeName)}
+                onCheckedChange={() => {
+                  toggleMake(makeName); // Toggle selected makes
+                  const params = new URLSearchParams(searchParams);
+                  if (selectedMakes.includes(makeName)) {
+                    params.set("makes", selectedMakes.join(","));
+                  } else {
+                    params.delete("makes");
+                  }
+                  setSearchParams(params, { replace: true }); // Syncs with URL
+                }}
               />
               <Label
                 htmlFor={`make-${makeName}`}
@@ -371,7 +452,16 @@ const SearchPage = () => {
               <Checkbox
                 id={`fuel-${fuel}`}
                 checked={selectedFuelTypes.includes(fuel)}
-                onCheckedChange={() => toggleFuelType(fuel)}
+                onCheckedChange={() => {
+                  toggleFuelType(fuel); // Toggle selected fuel types
+                  const params = new URLSearchParams(searchParams);
+                  if (selectedFuelTypes.includes(fuel)) {
+                    params.set("fuels", selectedFuelTypes.join(","));
+                  } else {
+                    params.delete("fuels");
+                  }
+                  setSearchParams(params, { replace: true }); // Syncs with URL
+                }}
               />
               <Label
                 htmlFor={`fuel-${fuel}`}
@@ -384,11 +474,20 @@ const SearchPage = () => {
         </div>
       </div>
 
-      {/* Year Range (UI only - not wired) */}
+      {/* Year Range */}
       <div className="filter-section">
         <h3 className="font-semibold text-foreground mb-4">Year</h3>
         <div className="flex gap-2">
-          <Select>
+          <Select
+            value={minYear}
+            onValueChange={(value) => {
+              setMinYear(value); // Set the selected Min year
+              const params = new URLSearchParams(searchParams);
+              if (value) params.set("minYear", value);
+              else params.delete("minYear");
+              setSearchParams(params, { replace: true }); // Syncs with URL
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Min" />
             </SelectTrigger>
@@ -400,7 +499,17 @@ const SearchPage = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select>
+
+          <Select
+            value={maxYear}
+            onValueChange={(value) => {
+              setMaxYear(value); // Set the selected Max year
+              const params = new URLSearchParams(searchParams);
+              if (value) params.set("maxYear", value);
+              else params.delete("maxYear");
+              setSearchParams(params, { replace: true }); // Syncs with URL
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Max" />
             </SelectTrigger>
@@ -415,12 +524,13 @@ const SearchPage = () => {
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Reset Filters */}
       <div className="pt-4 space-y-2">
-        <Button variant="accent" className="w-full">
-          Apply Filters
-        </Button>
-        <Button variant="ghost" className="w-full" onClick={clearFilters}>
+        <Button
+          variant="ghost"
+          className="w-full"
+          onClick={clearFilters} // Reset filters
+        >
           Reset Filters
         </Button>
       </div>
@@ -442,6 +552,10 @@ const SearchPage = () => {
                   placeholder="Search by make, model, or keyword..."
                   className="pl-12 h-12"
                   defaultValue={query || make}
+                  onChange={(e) => {
+                    const query = e.target.value;
+                    setSearchParams({ q: query }, { replace: true });
+                  }}
                 />
               </div>
 
