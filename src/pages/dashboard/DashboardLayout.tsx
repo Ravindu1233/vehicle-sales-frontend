@@ -34,6 +34,7 @@ const DashboardLayout = () => {
   const [myListingsCount, setMyListingsCount] = useState<number>(0);
   const [userFullName, setUserFullName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [profileImage, setProfileImage] = useState<string>("");
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -41,6 +42,7 @@ const DashboardLayout = () => {
         const res = await api.get("/api/users/me");
         setUserFullName(`${res.data.first_name} ${res.data.last_name}`); // Full name
         setUserEmail(res.data.email); // Email
+        setProfileImage(res.data.profile_image); // Profile image URL
       } catch (error) {
         console.error("Failed to fetch user details");
       }
@@ -92,9 +94,17 @@ const DashboardLayout = () => {
                 {/* User info section */}
                 <div className="flex items-center flex-col gap-3 p-4 mb-4">
                   <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
-                    <span className="text-2xl font-bold text-accent-foreground">
-                      {userFullName ? userFullName[0] : "JD"}
-                    </span>
+                    {profileImage ? (
+                      <img
+                        src={`${import.meta.env.VITE_API_URL}${profileImage}`}
+                        alt="Profile"
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-accent-foreground">
+                        {userFullName ? userFullName[0] : "JD"}
+                      </span>
+                    )}
                   </div>
                   {/* Full Name */}
                   <p className="font-semibold text-foreground text-center">

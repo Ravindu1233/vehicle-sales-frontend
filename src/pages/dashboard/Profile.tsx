@@ -142,9 +142,12 @@ const Profile = () => {
               {/* Display profile image if available */}
               <AvatarImage
                 src={
-                  profile.profileImage ? `/uploads/${profile.profileImage}` : ""
+                  profile.profileImage
+                    ? `${import.meta.env.VITE_API_URL}${profile.profileImage}` // No need to prepend '/uploads/' again
+                    : ""
                 }
               />
+
               <AvatarFallback className="text-2xl bg-accent text-accent-foreground">
                 {profile.firstName[0]}
                 {profile.lastName[0]}
