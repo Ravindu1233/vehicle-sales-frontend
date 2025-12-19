@@ -44,7 +44,7 @@ const DashboardLayout = () => {
         setUserEmail(res.data.email); // Email
         setProfileImage(res.data.profile_image); // Profile image URL
       } catch (error) {
-        console.error("Failed to fetch user details");
+        console.error("Failed to fetch user details", error);
       }
     };
 
@@ -55,12 +55,17 @@ const DashboardLayout = () => {
         const res = await api.get("/api/listings/mine");
         setMyListingsCount(Array.isArray(res.data) ? res.data.length : 0);
       } catch (error) {
-        console.error("Failed to fetch listing count");
+        console.error("Failed to fetch listing count", error);
       }
     };
 
     fetchMyListingsCount();
   }, []);
+
+  // Function to update profile image after saving it from profile edit page
+  const updateProfileImage = (newImage: string) => {
+    setProfileImage(newImage);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -161,7 +166,7 @@ const DashboardLayout = () => {
             )}
 
             <main className="flex-1 min-w-0">
-              <Outlet />
+              <Outlet context={{ updateProfileImage }} />
             </main>
           </div>
         </div>

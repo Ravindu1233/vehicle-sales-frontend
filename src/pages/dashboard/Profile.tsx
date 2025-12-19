@@ -26,6 +26,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null); // Initially null until data is fetched
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null); // Store the new profile image file
+  const [previewImage, setPreviewImage] = useState<string | null>(null); // Store the preview of the selected image
 
   // Fetch user profile from API
   useEffect(() => {
@@ -87,6 +88,8 @@ const Profile = () => {
 
   const handleCancel = () => {
     setEditedProfile(profile); // Reset to the original profile
+    setProfileImage(null); // Reset profile image
+    setPreviewImage(null); // Reset image preview
     setIsEditing(false);
   };
 
@@ -100,6 +103,7 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (file) {
       setProfileImage(file); // Set the new profile image
+      setPreviewImage(URL.createObjectURL(file)); // Show preview of the new profile image
     }
   };
 
@@ -142,12 +146,12 @@ const Profile = () => {
               {/* Display profile image if available */}
               <AvatarImage
                 src={
-                  profile.profileImage
-                    ? `${import.meta.env.VITE_API_URL}${profile.profileImage}` // No need to prepend '/uploads/' again
-                    : ""
+                  previewImage ||
+                  (profile.profileImage
+                    ? `${import.meta.env.VITE_API_URL}${profile.profileImage}`
+                    : "")
                 }
               />
-
               <AvatarFallback className="text-2xl bg-accent text-accent-foreground">
                 {profile.firstName[0]}
                 {profile.lastName[0]}
