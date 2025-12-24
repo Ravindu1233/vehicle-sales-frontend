@@ -27,12 +27,17 @@ const Login = () => {
         const { token, user } = res.data;
 
         localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify(user)); // Save the user role and other info
 
         // Notify other components about authentication change
         window.dispatchEvent(new Event("auth-change"));
 
-        navigate("/dashboard");
+        // Redirect based on user role
+        if (user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err) {
       const msg =
