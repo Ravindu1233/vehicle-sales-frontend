@@ -17,20 +17,23 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError(""); // Reset error message
     setLoading(true);
 
     try {
       const res = await api.post("/api/auth/login", { email, password });
-      const { token, user } = res.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      if (res.status === 200) {
+        const { token, user } = res.data;
 
-      // ✅ ADD THIS (so Navbar updates instantly)
-      window.dispatchEvent(new Event("auth-change"));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
 
-      navigate("/dashboard");
+        // Notify other components about authentication change
+        window.dispatchEvent(new Event("auth-change"));
+
+        navigate("/dashboard");
+      }
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -51,7 +54,9 @@ const Login = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-blue-600 flex items-center justify-center">
                 <Car className="w-7 h-7 text-accent-foreground" />
               </div>
-              <span className="font-bold text-2xl text-foreground">AutoHub</span>
+              <span className="font-bold text-2xl text-foreground">
+                AutoHub
+              </span>
             </Link>
             <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
             <p className="mt-2 text-muted-foreground">
@@ -85,7 +90,10 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-sm text-accent hover:underline">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-accent hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -106,19 +114,31 @@ const Login = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <Checkbox id="remember" />
-              <Label htmlFor="remember" className="text-sm text-muted-foreground">
+              <Label
+                htmlFor="remember"
+                className="text-sm text-muted-foreground"
+              >
                 Remember me for 30 days
               </Label>
             </div>
 
-            <Button variant="hero" size="lg" className="w-full" disabled={loading}>
+            <Button
+              variant="hero"
+              size="lg"
+              className="w-full"
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
@@ -135,13 +155,20 @@ const Login = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" size="lg" type="button">Google</Button>
-            <Button variant="outline" size="lg" type="button">Facebook</Button>
+            <Button variant="outline" size="lg" type="button">
+              Google
+            </Button>
+            <Button variant="outline" size="lg" type="button">
+              Facebook
+            </Button>
           </div>
 
           <p className="text-center text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-accent font-semibold hover:underline">
+            <Link
+              to="/signup"
+              className="text-accent font-semibold hover:underline"
+            >
               Sign up
             </Link>
           </p>
@@ -154,9 +181,12 @@ const Login = () => {
         </div>
         <div className="relative h-full flex items-center justify-center p-12">
           <div className="text-center text-primary-foreground">
-            <h2 className="text-4xl font-bold mb-4">Find Your Dream Car Today</h2>
+            <h2 className="text-4xl font-bold mb-4">
+              Find Your Dream Car Today
+            </h2>
             <p className="text-xl text-primary-foreground/80 max-w-md">
-              Access millions of verified listings with AI-powered fraud detection
+              Access millions of verified listings with AI-powered fraud
+              detection
             </p>
           </div>
         </div>

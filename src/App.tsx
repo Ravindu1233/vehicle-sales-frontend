@@ -9,6 +9,7 @@ import VehicleDetails from "./pages/VehicleDetails";
 import Compare from "./pages/Compare";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import AddListing from "./pages/AddListing";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/add-listing" element={<AddListing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="listings" element={<MyListings />} />
